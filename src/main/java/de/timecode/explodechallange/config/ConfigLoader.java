@@ -12,7 +12,7 @@ import java.util.HashMap;
 
 public class ConfigLoader {
 
-    private File file = new File("plugins//Challenge", "explodesettings.yml");
+    private File file = new File("plugins//TNTTime", "settings.yml");
     private YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
     private HashMap<Player, Location> locs = new HashMap<>();
 
@@ -20,7 +20,11 @@ public class ConfigLoader {
         cfg.options().header("ChanceNumber = The Main Chance for a TNT drop \n Chance = Chance that the block turns into a TNT-Block (1-100%) \n Cooldown = Set 0 to disable the cooldown (Cooldown that the block turns into TNT)");
         cfg.options().copyDefaults(true);
         saveFile();
-        //If I need plugin instance or something like this
+    }
+
+    public void addDefault(String key, Object value){
+        cfg.addDefault(key, value);
+        saveFile();
     }
 
     public ArrayList<Location> getLocations(){
@@ -60,6 +64,13 @@ public class ConfigLoader {
     public Object getValue(String key){
         if(keyExists(key)){
             return cfg.get(key);
+        }
+        return null;
+    }
+
+    public String getStringValue(String key){
+        if(keyExists(key)){
+            return cfg.getString(key).replace("&","§");
         }
         return null;
     }

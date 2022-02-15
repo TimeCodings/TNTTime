@@ -1,6 +1,6 @@
 package de.timecode.explodechallange;
 
-import de.timecode.explodechallange.command.PauseChallangeCMD;
+import de.timecode.explodechallange.command.TNTTimeCMD;
 import de.timecode.explodechallange.config.ConfigLoader;
 import de.timecode.explodechallange.listener.ExplodeListener;
 import net.md_5.bungee.api.ChatMessageType;
@@ -20,42 +20,48 @@ public final class ExplodeChallange extends JavaPlugin {
     public static boolean failed = false;
     public static boolean completed = false;
     public static boolean stopped = false;
+    public static boolean canstart = false;
     public static String endcounter = "";
 
     @Override
     public void onEnable() {
         Bukkit.getConsoleSender().sendMessage("§aDie Challange §cExplodechallange §a kann nun beginnen!");
 
-        //TODO Enderdragon Rockets
-
         //Enable Instance
         pl = this;
 
         //Enable Commands
-        getCommand("pause").setExecutor(new PauseChallangeCMD());
+        getCommand("tnttime").setExecutor(new TNTTimeCMD());
 
         //Load Config
         ConfigLoader loader = new ConfigLoader();
-        if(!loader.keyExists("Chance")) {
-            loader.setValue("Chance", 25);
-        }
-        if(!loader.keyExists("ChanceNumber")) {
-            loader.setValue("ChanceNumber", 500);
-        }
-        if(!loader.keyExists("Cooldown")) {
-            loader.setValue("Cooldown", 10);
-        }
+        loader.addDefault("Permission", "tnttime.use");
+        loader.addDefault("IgnorePermission", "tnttime.ignore");
+        loader.addDefault("Chance", 25);
+        loader.addDefault("ChanceNumber", 500);
+        loader.addDefault("Cooldown", 10);
+        loader.addDefault("MinPlayers", 2);
+        loader.addDefault("WaitForPlayers", true);
+        loader.addDefault("AutoStart", true);
+        loader.addDefault("AutoTeleport", true);
 
-        if(!loader.keyExists("MinPlayers")) {
-            loader.setValue("MinPlayers", 2);
-        }
+        loader.addDefault("Message.UnPauseChallange", "&cYou canceled the break!");
+        loader.addDefault("Message.PauseChallange", "&4You activated pause mode!");
+        loader.addDefault("Message.StartChallange", "&a&lYou've started the TNTTime Challange!");
+        loader.addDefault("Message.AlreadyStarted", "&cThe game is already running!");
+        loader.addDefault("Message.StopChallange", "&4You've stopped the challange!");
+        loader.addDefault("Message.AlreadyStopped", "&cThe game is already stopped!");
+        loader.addDefault("Message.WrongSyntax", "&cTry /tnttime help");
+        loader.addDefault("Message.NoPermission", "&cYou do not have permission to do this!");
+        loader.addDefault("Message.YouCanOnlyMove", "&7You can only move if &c%missing% &7people joined the game!");
+        loader.addDefault("Message.Failed", "&f&lYou failed the challange! &7(%name% died) &c&lIt took %time%");
 
         //Send Timer
 
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
-                if(Bukkit.getOnlinePlayers().size() >= Integer.valueOf(new ConfigLoader().getValue("MinPlayers").toString())) {
+                if(canstart) {
                     if(!stopped) {
                         seconds++;
                         if (seconds == 60) {

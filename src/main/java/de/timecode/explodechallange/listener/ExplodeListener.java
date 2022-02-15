@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
@@ -20,17 +21,26 @@ public class ExplodeListener implements Listener {
 
     public ConfigLoader loader = new ConfigLoader();
     public ArrayList<Player> cooldown = new ArrayList<>();
-    public boolean enough = false;
+    public static boolean enough = false;
 
     @EventHandler
     public void onMove(PlayerMoveEvent e){
         Player p = e.getPlayer();
-        if(Bukkit.getOnlinePlayers().size() < Integer.valueOf(new ConfigLoader().getValue("MinPlayers").toString())){
-            e.setCancelled(true);
-            p.sendMessage("§7Du kannst dich erst bewegen wenn §c"+Integer.valueOf(new ConfigLoader().getValue("MinPlayers").toString())+" §7Spieler den Server betreten haben!");
-            enough = false;
+        String blockperm = loader.getValue("IgnorePermission").toString();
+
+        if(ExplodeChallange.canstart) {
+            if (Bukkit.getOnlinePlayers().size() < Integer.valueOf(new ConfigLoader().getValue("MinPlayers").toString())) {
+                if(Boolean.valueOf(loader.getValue("WaitForPlayers").toString()) && !p.hasPermission(blockperm)) {
+                    e.setCancelled(true);
+                    int i = Integer.valueOf(new ConfigLoader().getValue("MinPlayers").toString());
+                    p.sendMessage(loader.getStringValue("Message.YouCanOnlyMove").replace("%missing%", String.valueOf((i-Bukkit.getOnlinePlayers().size()))).replace("%players%", String.valueOf(i)));
+                }
+                enough = false;
+            } else {
+                enough = true;
+            }
         }else{
-            enough = true;
+            enough = false;
         }
 
         if(enough && !ExplodeChallange.failed && !ExplodeChallange.completed && !ExplodeChallange.stopped) {
@@ -73,6 +83,8 @@ public class ExplodeListener implements Listener {
     public void onBlockBreak(BlockBreakEvent e){
         Player p = e.getPlayer();
         //Start generator and blow up tnt
+        String blockperm = loader.getValue("IgnorePermission").toString();
+
         if(enough && !ExplodeChallange.failed && !ExplodeChallange.completed && !ExplodeChallange.stopped) {
             Location ll = e.getBlock().getLocation();
             Random r = new Random();
@@ -103,10 +115,14 @@ public class ExplodeListener implements Listener {
                 }
             }
         }
+        if(!Boolean.valueOf(loader.getValue("WaitForPlayers").toString()) && !p.hasPermission(blockperm)) {
+            e.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e){
+        e.getPlayer().setGameMode(GameMode.SURVIVAL);
         if(e.getPlayer().hasPlayedBefore()){
             e.getPlayer().teleport(e.getPlayer().getWorld().getSpawnLocation());
         }else{
@@ -145,9 +161,16 @@ public class ExplodeListener implements Listener {
             all.sendMessage("");
             all.sendMessage("");
             all.sendMessage("");
-            all.sendMessage("§7Ihr habt die Challange verkackt! \n§7Bedankt euch bei §b§l"+p.getName()+" §7den Minecraft 'Profi'! \n§cServer schließt... Viel Glück beim nächsten Mal! \n§c§lZeit: "+ExplodeChallange.endcounter);
+            all.sendMessage(loader.getStringValue("Message.Failed").replace("%name%", p.getName()).replace("%time%", ExplodeChallange.endcounter));
             ExplodeChallange.failed = true;
             all.setGameMode(GameMode.SPECTATOR);
+        }
+    }
+
+    @EventHandler
+    public void onEntityDamage(EntityDamageEvent e){
+        if(!ExplodeChallange.canstart || ExplodeChallange.stopped || ExplodeChallange.failed || ExplodeChallange.completed){
+            e.setCancelled(true);
         }
     }
 
@@ -195,13 +218,19 @@ public class ExplodeListener implements Listener {
             }
         }
         }
+        String blockperm = loader.getValue("IgnorePermission").toString();
+        if(!Boolean.valueOf(loader.getValue("WaitForPlayers").toString()) && !p.hasPermission(blockperm)) {
+            e.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onWorldEnter(PlayerChangedWorldEvent e){
         Player p = e.getPlayer();
-        for(Player all : Bukkit.getOnlinePlayers()){
-            all.teleport(p);
+        if(Boolean.valueOf(loader.getValue("AutoTeleport").toString())) {
+            for (Player all : Bukkit.getOnlinePlayers()) {
+                all.teleport(p);
+            }
         }
     }
 }
