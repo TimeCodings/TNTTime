@@ -1,0 +1,10 @@
+name: ExplodeChallange
+version: '${project.version}'
+main: de.timecode.explodechallange.ExplodeChallange
+api-version: 1.18
+authors: [ TimeCoding ]
+description: TimeCodings ExplodeChallange Plugin | 1.18.1
+website: timecoding.de
+
+commands:
+  pause:
